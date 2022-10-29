@@ -32,6 +32,7 @@ class ORGate:
         val = (self.weight * x_1) + (self.weight * x_2)
         return self.neuron.is_active(val)
 
+
 class ANDNOTGate:
     def __init__(self, weight_pos, weight_neg, threshold):
         self.weight_pos = weight_pos
@@ -43,6 +44,7 @@ class ANDNOTGate:
     def forward(self, x_1, x_2):
         val = (self.weight_pos * x_1) + (self.weight_neg * x_2)
         return self.neuron.is_active(val)
+
 
 class XORGate:
     def __init__(self, weight_pos, weight_neg, threshold):
