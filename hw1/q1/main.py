@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from  q1.neuron import ANDGate, ORGate, ANDNOTGate, XORGate
+from  neuron import ANDGate, ORGate, ANDNOTGate, XORGate
 
 def test_gate(gate):
     print("x1", "x2", "y", sep=" | ")

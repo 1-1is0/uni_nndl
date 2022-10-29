@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from q1.neuron import ANDGate, ORGate, ANDNOTGate, XORGate
-from itertools import permutations,combinations, chain, product
+from itertools import product
+
+from neuron import ANDGate, ANDNOTGate, ORGate, XORGate
 
 states = [0, 1]
 ss = states
@@ -13,8 +14,6 @@ B = product(states, states)
 and_gate = ANDGate(1, 2)
 and_not_gate = ANDNOTGate(weight_pos=2, weight_neg=-1, threshold=2)
 or_gate = ORGate(2, 2)
-
-#  print(list(chain(*map(lambda x: combinations(ss, x), range(0, len(ss)+1)))))
 
 print("AA", "BB", "CCCC", sep= " | ")
 print("10", "10", "3210", sep= " | ")

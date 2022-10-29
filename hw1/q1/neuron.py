@@ -15,7 +15,7 @@ class ANDGate:
     def __init__(self, weight, threshold):
         self.weight = weight
         self.neuron = Neuron(threshold)
-        assert threshold >= 2 * weight, "thereshold must be two times the weight"
+        assert threshold >= 2 * weight, "threshold must be two times the weight"
 
     def forward(self, x_1, x_2):
         val = (self.weight * x_1) + (self.weight * x_2)
