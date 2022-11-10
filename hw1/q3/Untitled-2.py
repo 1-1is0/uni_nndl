@@ -111,7 +111,7 @@ train_x = scaler.fit_transform(df[["rating"]])
 train_x
 
 # %%
-df["rating"] = train_x
+# df["rating"] = train_x
 
 # %%
 
@@ -144,13 +144,15 @@ def get_train_data():
         all_data.append(rated_zero)
     return all_data
 
+
 # %%
 all_data = get_train_data()
 
 # %% [markdown]
-# # F. Build tne network 
+# # F. Build tne network
 
 # %%
+
 
 class RBM():
     def __init__(self, n_visible_layer, n_hidden_layer=20, lr=0.05):
@@ -218,7 +220,7 @@ for epoch in range(20):
 
 
 # %%
-sample_user = all[75]
+sample_user = all_data[75]
 rating = sample_user.rating.values
 rating = torch.tensor(rating, dtype=torch.float)
 rating = Variable(rating.view(-1, len(rating)))
@@ -228,6 +230,13 @@ xp = rbm.back(a)
 
 xp_numpy = xp.detach().numpy()
 print(np.transpose(xp_numpy).shape)
-sample_user['recom'] = np.transpose(xp_numpy).tolist()
+sample_user["recom"] = np.transpose(xp_numpy).tolist()
+sample_user["recom"] = sample_user['recom'].apply(lambda x: x[0])
 # %%
-sample_user
+
+sample_user.shape
+
+# %%
+
+non_rated = sample_user[sample_user.rating == 0]  # type: pd.DataFrame
+non_rated.nlargest(15, 'recom')
