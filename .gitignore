@@ -127,8 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
 hw0/
+*.zip
+*.pdf
 # datasets
-data/*
+data/
 # pytorch saved model
 *.pth 
