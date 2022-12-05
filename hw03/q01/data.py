@@ -1,9 +1,10 @@
 # %%
 import pandas as pd
 import albumentations as A
+import torch
 from sklearn.model_selection import train_test_split
 import cv2
-from sklearn.preprocessing import LabelEncoder 
+from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import Dataset, DataLoader
 from albumentations.pytorch import ToTensorV2
 from torchvision import transforms
@@ -63,14 +64,19 @@ def get_data():
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
         A.pytorch.ToTensorV2(),
     ])
+    batch_size = 32
+    shuffle = True
+    num_workers = 12
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    pin_memory = True if "cuda" in str(device) else False
 
     train_set = ImageDataset(train_df, transform)
     test_set = ImageDataset(test_df, transform)
     train_loader = DataLoader(
-        train_set, batch_size=64, shuffle=True, num_workers=12)
+        train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
 
     test_loader = DataLoader(
-        test_set, batch_size=64, shuffle=True, num_workers=12)
+        test_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
 
     data_loader = {
         "train": train_loader,
@@ -81,6 +87,6 @@ def get_data():
         "train": len(train_set),
         "val": len(test_set)
     }
-    return data_loader, dataset_sizes 
+    return data_loader, dataset_sizes
 
 # %%
