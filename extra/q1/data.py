@@ -33,8 +33,23 @@ def read_data(path):
     # data = pd.read_csv('extra/q1/data/creditcard.csv')
     return data
 
+def get_percent_of_data(x, y, percent=1):
+    fraud_class = 1
+    normal_class = 0
+    fraud_train_label = y[np.where(y==fraud_class)]
+    fraud_train_data = x[np.where(y==fraud_class)]
+    normal_train_label = y[np.where(y==normal_class)]
+    normal_train_data = x[np.where(y==normal_class)]
 
-def get_data():
+    percent_of_data = int(len(fraud_train_label) * percent)
+    idx = np.random.choice(len(fraud_train_label), percent_of_data, replace=False)
+    xx = fraud_train_data[idx]
+    yy = fraud_train_label[idx]
+    label = np.concatenate((normal_train_label, yy), axis=0)
+    data = np.concatenate((normal_train_data, xx), axis=0)
+    return data, label
+
+def get_data(over_sample=True, percent=1):
     data = read_data(DIR)
 
     data['normAmount'] = StandardScaler().fit_transform(
@@ -44,12 +59,14 @@ def get_data():
     X = np.array(data.iloc[:, data.columns != 'Class'])
     y = np.array(data.iloc[:, data.columns == 'Class'])
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=0)
-    sm = SMOTE(random_state=2)
-    X_train_res, y_train_res = sm.fit_resample(X_train, y_train.ravel())
+        X, y, test_size=0.2, random_state=0)
+    if over_sample:
+        sm = SMOTE(random_state=42)
+        X_train, y_train = sm.fit_resample(X_train, y_train.ravel())
+    X_train, y_train = get_percent_of_data(X_train, y_train, percent)
     y_test = y_test.ravel()
 
-    train_set = CardDataset(X_train_res, y_train_res)
+    train_set = CardDataset(X_train, y_train)
     test_set = CardDataset(X_test, y_test)
 
     batch_size = 256
@@ -106,4 +123,5 @@ def get_data():
 #     b = a-b
 #     a = c
 # print(a, b)
+
 # %%

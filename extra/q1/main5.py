@@ -4,7 +4,6 @@ import os
 import time
 import torch
 import torch.nn as nn
-import numpy as np
 from tqdm import tqdm
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
@@ -104,7 +103,7 @@ class Classifier(nn.Module):
         return x
 
 
-data_loader, dataset, dataset_sizes = get_data()
+data_loader, dataset, dataset_sizes = get_data(over_sample=True, percent=0.5)
 
 auto_encoder = AutoEncoder().to(device)
 classifier = Classifier().to(device)
@@ -120,7 +119,7 @@ classifier_optimizer = torch.optim.SGD(classifier.parameters(), lr=0.01)
 
 def train(epochs=20):
     path = "model"
-    net_name = f"{auto_encoder._get_name()}{classifier._get_name()}"
+    net_name = f"{auto_encoder._get_name()}{classifier._get_name()}-50"
     criterion_name = f"{auto_encoder_criterion.__class__.__name__}{classifier_criterion.__class__.__name__}"
     optimizer_name = f"{auto_encoder_optimizer.__class__.__name__}{classifier_optimizer.__class__.__name__}"
     model_config_name = f"{net_name}-optimizer-{optimizer_name}-loss-{criterion_name}"
@@ -182,7 +181,6 @@ def train(epochs=20):
                     inputs = inputs.to(device)
                     labels = labels.to(device)
                     now_batch_size = inputs.size(0)
-
                     # zero the parameter gradients
                     auto_encoder_optimizer.zero_grad()
                     classifier_optimizer.zero_grad()
