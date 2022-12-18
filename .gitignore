@@ -135,3 +135,4 @@ hw0/
 data/
 # pytorch saved model
 *.pth 
+YOLOv6
