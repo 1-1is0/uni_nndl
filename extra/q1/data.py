@@ -11,6 +11,8 @@ from albumentations.pytorch import ToTensorV2
 from torchvision import transforms
 import os
 DIR = "./data/COVID-19 Dataset/CT/"
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
 
 
 class CardDataset(Dataset):
@@ -33,21 +35,24 @@ def read_data(path):
     # data = pd.read_csv('extra/q1/data/creditcard.csv')
     return data
 
+
 def get_percent_of_data(x, y, percent=1):
     fraud_class = 1
     normal_class = 0
-    fraud_train_label = y[np.where(y==fraud_class)]
-    fraud_train_data = x[np.where(y==fraud_class)]
-    normal_train_label = y[np.where(y==normal_class)]
-    normal_train_data = x[np.where(y==normal_class)]
+    fraud_train_label = y[np.where(y == fraud_class)]
+    fraud_train_data = x[np.where(y == fraud_class)]
+    normal_train_label = y[np.where(y == normal_class)]
+    normal_train_data = x[np.where(y == normal_class)]
 
     percent_of_data = int(len(fraud_train_label) * percent)
-    idx = np.random.choice(len(fraud_train_label), percent_of_data, replace=False)
+    idx = np.random.choice(len(fraud_train_label),
+                           percent_of_data, replace=False)
     xx = fraud_train_data[idx]
     yy = fraud_train_label[idx]
     label = np.concatenate((normal_train_label, yy), axis=0)
     data = np.concatenate((normal_train_data, xx), axis=0)
     return data, label
+
 
 def get_data(over_sample=True, percent=1):
     data = read_data(DIR)
@@ -84,19 +89,39 @@ def get_data(over_sample=True, percent=1):
     data_loader = {
         "train": train_loader,
         "val": test_loader,
+        "test": test_loader,
     }
 
     dataset_sizes = {
         "train": len(train_set),
-        "val": len(test_set)
+        "val": len(test_set),
+        "test": len(test_set),
     }
 
     dataset = {
         "train": train_set,
-        "val": test_set
+        "val": test_set,
+        "test": test_set,
     }
     return data_loader, dataset, dataset_sizes
 
+
+def predict_list(data, auto_encoder, classifier):
+    y_true = []
+    y_pred = []
+    with torch.no_grad():
+        for inputs, labels in data:
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+            # calculate outputs by running images through the network
+            decoded = auto_encoder(inputs)
+            outputs = classifier(decoded)
+            _, predicted = torch.max(outputs.data, 1)
+            for a, b in zip(labels, predicted):
+                # print(a.item(), b.item())
+                y_true.append(a.item())
+                y_pred.append(b.item())
+    return y_true, y_pred
 # # %%
 # a, b = get_data()
 # # %%

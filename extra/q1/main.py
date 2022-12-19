@@ -1,110 +1,21 @@
 # %%
-from train import TrainModel
 import os
 import time
 import torch
 import torch.nn as nn
-import numpy as np
 from tqdm import tqdm
-import torch.nn.functional as F
-import matplotlib.pyplot as plt
-from data import get_data
+from model import AutoEncoder, Classifier, get_state_path
+from plotting import draw_acc_curve, draw_loss_curve, plot_classification_report, plot_conf_matrix
+from data import get_data, predict_list
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
-
-
-def draw_loss_curve(current_epoch, name, res):
-    plt.clf()
-    x_epoch = list(range(1, current_epoch+1))
-    loss_train = res["loss_train"]
-    loss_val = res["loss_val"]
-    plt.plot(x_epoch, loss_train, 'bo-', label='train')
-    plt.plot(x_epoch, loss_val, 'ro-', label='val')
-    plt.legend()
-    os.makedirs("loss_graphs", exist_ok=True)
-    plt.savefig(os.path.join('./loss_graphs', f'loss_{name}.jpg'))
-    plt.clf()
-
-    plt.plot(x_epoch, loss_train, 'bo-', label='train')
-    plt.legend()
-    os.makedirs("loss_graphs", exist_ok=True)
-    plt.savefig(os.path.join('./loss_graphs', f'loss_train_{name}.jpg'))
-    plt.clf()
-
-    plt.plot(x_epoch, loss_val, 'ro-', label='val')
-    plt.legend()
-    os.makedirs("loss_graphs", exist_ok=True)
-    plt.savefig(os.path.join('./loss_graphs', f'loss_val_{name}.jpg'))
-    plt.clf()
-
-
-
-def draw_acc_curve(current_epoch, name, res):
-    plt.clf()
-    x_epoch = list(range(1, current_epoch+1))
-    acc_train = res["acc_train"]
-    acc_val = res["acc_val"]
-    plt.plot(x_epoch, acc_train, 'bo-', label='train')
-    plt.plot(x_epoch, acc_val, 'ro-', label='val')
-    plt.legend()
-    os.makedirs("loss_graphs", exist_ok=True)
-    plt.savefig(os.path.join('./loss_graphs', f'acc_{name}.jpg'))
-    plt.clf()
-
-    plt.plot(x_epoch, acc_train, 'bo-', label='train')
-    plt.legend()
-    os.makedirs("loss_graphs", exist_ok=True)
-    plt.savefig(os.path.join('./loss_graphs', f'acc_train_{name}.jpg'))
-    plt.clf()
-
-    plt.plot(x_epoch, acc_val, 'ro-', label='val')
-    plt.legend()
-    os.makedirs("loss_graphs", exist_ok=True)
-    plt.savefig(os.path.join('./loss_graphs', f'acc_val_{name}.jpg'))
-    plt.clf()
+percent = 1
 
 # %%
 
 
-class AutoEncoder(nn.Module):
-    def __init__(self):
-        super(AutoEncoder, self).__init__()
-        self.l1 = nn.Linear(29, 22)
-        self.l2 = nn.Linear(22, 15)
-        self.l3 = nn.Linear(15, 10)
-        self.l4 = nn.Linear(10, 22)
-        self.l5 = nn.Linear(22, 29)
-
-    def forward(self, x):
-        x = F.relu(self.l1(x))
-        x = F.relu(self.l2(x))
-        x = F.relu(self.l3(x))
-        x = F.relu(self.l4(x))
-        x = F.relu(self.l5(x))
-        return x
-
-
-class Classifier(nn.Module):
-    def __init__(self):
-        super(Classifier, self).__init__()
-        self.l1 = nn.Linear(29, 22)
-        self.l2 = nn.Linear(22, 15)
-        self.l3 = nn.Linear(15, 10)
-        self.l4 = nn.Linear(10, 5)
-        self.l5 = nn.Linear(5, 2)
-
-    def forward(self, x):
-        x = F.relu(self.l1(x))
-        x = F.relu(self.l2(x))
-        x = F.relu(self.l3(x))
-        x = F.relu(self.l4(x))
-        x = F.log_softmax(self.l5(x), dim=1)
-        # x = F.relu(self.l5(x))
-        return x
-
-
-data_loader, dataset, dataset_sizes = get_data()
+data_loader, dataset, dataset_sizes = get_data(percent=percent)
 
 auto_encoder = AutoEncoder().to(device)
 classifier = Classifier().to(device)
@@ -117,15 +28,13 @@ classifier_optimizer = torch.optim.SGD(classifier.parameters(), lr=0.01)
 
 # %%
 
+model_config_name, state_file_name = get_state_path(
+    auto_encoder, classifier, percent,
+    auto_encoder_criterion, classifier_criterion,
+    auto_encoder_optimizer, classifier_optimizer
+)
 
 def train(epochs=20):
-    path = "model"
-    net_name = f"{auto_encoder._get_name()}{classifier._get_name()}"
-    criterion_name = f"{auto_encoder_criterion.__class__.__name__}{classifier_criterion.__class__.__name__}"
-    optimizer_name = f"{auto_encoder_optimizer.__class__.__name__}{classifier_optimizer.__class__.__name__}"
-    model_config_name = f"{net_name}-optimizer-{optimizer_name}-loss-{criterion_name}"
-    os.makedirs(path, exist_ok=True)
-    state_file_name = f"{path}/state-{model_config_name}.pth"
 
     state_res = {}
     best_auto_encoder = None
@@ -154,9 +63,6 @@ def train(epochs=20):
     }
     best_val_loss = min(res["loss_val"] + [9999])
 
-    a = data_loader["train"]
-    num_print = 4
-    print_period = len(a) // num_print
     print(f"start epoch {res['epoch']}")
     try:
         # loop over the dataset multiple times
@@ -249,7 +155,7 @@ def train(epochs=20):
             torch.save(state, state_file_name)
         else:
             print("Not Saving")
-            
+
 
 # %%
 
@@ -267,3 +173,22 @@ train(150)
 # train.train(301)
 
 # %%
+
+def get_model_best_wights():
+    state = torch.load(state_file_name)
+    return state["best_auto_encoder"], state["best_classifier"]
+
+
+auto_encoder = AutoEncoder().to(device)
+auto_encoder.load_state_dict(get_model_best_wights()[0])
+classifier = Classifier().to(device)
+classifier.load_state_dict(get_model_best_wights()[1])
+
+y_true, y_pred = predict_list(data_loader["test"], auto_encoder, classifier)
+
+
+plot_conf_matrix(y_true, y_pred, model_config_name)
+
+fig, ax = plot_classification_report(y_true, y_pred,
+                                     target_names=["Normal", "Fraud"],
+                                     name=model_config_name)
